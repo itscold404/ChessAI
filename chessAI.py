@@ -81,14 +81,14 @@ class chessAI():
     # update the board state give a move 
     #--------------------------------------------------------------------------------------------
     def push(self, move):
-        print(move)
+        print("pushed", move)
         self.board.push(move)
         
     #--------------------------------------------------------------------------------------------
     # update the board state give a move san
     #--------------------------------------------------------------------------------------------
     def push_san(self, move_san):
-        print(move_san)
+        print("sanned", move_san)
         self.board.push_san(move_san)
     
     #--------------------------------------------------------------------------------------------
@@ -253,8 +253,11 @@ class chessAI():
             
             # if gm opening move is legal, use it. else use minimax search
             if gm_move in list(self.board.legal_moves):
+                print("using gm move")
                 return gm_move
             else:
+                print("searching for move")
                 return self.search_move()
         except:
+            print("searching for move")
             return self.search_move()
