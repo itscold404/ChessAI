@@ -66,15 +66,15 @@ piece_weight = {"p": 100,
 
 board = chess.Board()
 
-#------------------------------------------------------------------------
-# produce evaluation score based on checkmate and stalemate
-#------------------------------------------------------------------------
-def check_game_continue():
+#--------------------------------------------------------------------------------------------
+# produce evaluation score based ONLY on checkmate and stalemate
+#--------------------------------------------------------------------------------------------
+def evalueate_board_state():
     if board.is_checkmate():
         if board.turn:
-            return -9999
+            return -999999
         else:
-            return 9999
+            return 999999
         
     if board.is_stalemate():
             return 0
@@ -82,10 +82,14 @@ def check_game_continue():
     if board.is_insufficient_material():
             return 0
 
-#------------------------------------------------------------------------
-# find the score based on each piece's material value and position value
-#------------------------------------------------------------------------
-def find_piece_evaluation():
+#--------------------------------------------------------------------------------------------
+# find the evaluation score based on board state (checkmate/stalemate)
+# else find the score based on each piece's material value and position 
+# value
+#--------------------------------------------------------------------------------------------
+def evaluate_board():
+    board_state_score = evalueate_board_state()
+    
     # find number of each piece type for both black and white
     wp = len(board.pieces(chess.PAWN, chess.WHITE))
     bp = len(board.pieces(chess.PAWN, chess.BLACK))
@@ -130,13 +134,14 @@ def find_piece_evaluation():
     kingsq = kingsq + sum([-kingstable[chess.square_mirror(i)]
                         for i in board.pieces(chess.KING, chess.BLACK)])
     
-    eval = material + pawnsq + knightsq + bishopsq + rooksq + queensq + kingsq
+    eval = (board_state_score + material + pawnsq + knightsq + bishopsq + 
+            rooksq + queensq + kingsq)
     
     return eval if board.turn else -eval
 
-#------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 # quienscence search to avoid horixontal effect from depth limitation
-#------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 def quiesce(alpha, beta):
     stand_pat = evaluate_board()
     if stand_pat >= beta:
@@ -157,9 +162,9 @@ def quiesce(alpha, beta):
 
     return alpha
 
-#------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 # alpha-beta pruning to cut search cost
-#------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 def alphabeta(alpha, beta, depthleft):
     bestscore = -9999
     if (depthleft == 0):
@@ -179,10 +184,10 @@ def alphabeta(alpha, beta, depthleft):
             
     return bestscore
 
-#------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 # chess ai finds move from grandmaster opening moves or use minimax search
 # with alpha-beta pruning
-#------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 def select_move(search_depth):
     try:
         move = chess.polyglot.MemoryMappedReader("human.bin").weighted_choice(board).move
