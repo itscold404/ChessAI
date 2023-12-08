@@ -64,9 +64,45 @@ piece_weight = {"p": 100,
 
 
 class chessAI():
+    #--------------------------------------------------------------------------------------------
+    # initialize the board and search depth
+    #--------------------------------------------------------------------------------------------
     def __init__(self, board, depth) -> None:
         self.board = board
         self.search_depth = depth
+        
+    #--------------------------------------------------------------------------------------------
+    # return the current board
+    #--------------------------------------------------------------------------------------------
+    def get_board(self):
+        return self.board
+    
+    #--------------------------------------------------------------------------------------------
+    # update the board state give a move 
+    #--------------------------------------------------------------------------------------------
+    def push(self, move):
+        print(move)
+        self.board.push(move)
+        
+    #--------------------------------------------------------------------------------------------
+    # update the board state give a move san
+    #--------------------------------------------------------------------------------------------
+    def push_san(self, move_san):
+        print(move_san)
+        self.board.push_san(move_san)
+    
+    #--------------------------------------------------------------------------------------------
+    # reset the current board
+    #--------------------------------------------------------------------------------------------
+    def reset(self):
+        self.board.reset()
+        
+    #--------------------------------------------------------------------------------------------
+    # undo one move
+    #--------------------------------------------------------------------------------------------
+    def pop(self):
+        self.board.pop()
+        
     #--------------------------------------------------------------------------------------------
     # produce evaluation score based ONLY on checkmate and stalemate
     #--------------------------------------------------------------------------------------------
@@ -78,10 +114,12 @@ class chessAI():
                 return 999999
             
         if self.board.is_stalemate():
-                return 0
+            return 0
             
         if self.board.is_insufficient_material():
-                return 0
+            return 0
+            
+        return 0
 
     #--------------------------------------------------------------------------------------------
     # find the evaluation score based on board state (checkmate/stalemate)
@@ -184,31 +222,39 @@ class chessAI():
                 alpha = score
                 
         return bestscore
-
+    
     #--------------------------------------------------------------------------------------------
-    # chess ai finds move from grandmaster opening moves or use minimax search
-    # with alpha-beta pruning
+    # search for best move using minimax search
+    #--------------------------------------------------------------------------------------------
+    def search_move(self):
+        bestMove = chess.Move.null()
+        bestValue = -99999
+        alpha = -100000
+        beta = 100000
+        for move in self.board.legal_moves:
+            self.board.push(move)
+            boardValue = -1 * self.alphabeta(-beta, -alpha, self.search_depth - 1)
+            if boardValue > bestValue:
+                bestValue = boardValue
+                bestMove = move
+            if (boardValue > alpha):
+                alpha = boardValue
+            self.board.pop()
+        return bestMove
+    
+    #--------------------------------------------------------------------------------------------
+    # chess ai finds move from grandmaster opening moves or searches for one
     #--------------------------------------------------------------------------------------------
     def select_move(self):
         try:
-            move = chess.polyglot.MemoryMappedReader("human.bin").weighted_choice(self.board).move
-            return move
+            gm_move = chess.polyglot.MemoryMappedReader("human.bin").weighted_choice(self.board).move
+            print(self.board)
+            print(self.board.legal_moves)
+            
+            # if gm opening move is legal, use it. else use minimax search
+            if gm_move in list(self.board.legal_moves):
+                return gm_move
+            else:
+                return self.search_move()
         except:
-            bestMove = chess.Move.null()
-            bestValue = -99999
-            alpha = -100000
-            beta = 100000
-            for move in self.board.legal_moves:
-                self.board.push(move)
-                boardValue = -1 * self.alphabeta(-beta, -alpha, self.search_depth - 1)
-                if boardValue > bestValue:
-                    bestValue = boardValue
-                    bestMove = move
-                if (boardValue > alpha):
-                    alpha = boardValue
-                self.board.pop()
-            return bestMove
-
-
-# chessAI = chessAI(chess.Board())
-# print(chessAI.select_move(5))
+            return self.search_move()
