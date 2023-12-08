@@ -1,0 +1,4 @@
+chess==1.10.0
+chess-board==0.4.1
+pygame==2.5.2
+python-chess==1.999
