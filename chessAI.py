@@ -1,8 +1,6 @@
 import chess
 import chess.polyglot
 
-SEARCH_DEPTH = 3
-
 # establish the positioning and material value of each piece
 pawntable = [
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -64,150 +62,153 @@ piece_weight = {"p": 100,
                 "r": 500,
                 "q": 900}
 
-board = chess.Board()
 
-#--------------------------------------------------------------------------------------------
-# produce evaluation score based ONLY on checkmate and stalemate
-#--------------------------------------------------------------------------------------------
-def evalueate_board_state():
-    if board.is_checkmate():
-        if board.turn:
-            return -999999
-        else:
-            return 999999
-        
-    if board.is_stalemate():
-            return 0
-        
-    if board.is_insufficient_material():
-            return 0
-
-#--------------------------------------------------------------------------------------------
-# find the evaluation score based on board state (checkmate/stalemate)
-# else find the score based on each piece's material value and position 
-# value
-#--------------------------------------------------------------------------------------------
-def evaluate_board():
-    board_state_score = evalueate_board_state()
-    
-    # find number of each piece type for both black and white
-    wp = len(board.pieces(chess.PAWN, chess.WHITE))
-    bp = len(board.pieces(chess.PAWN, chess.BLACK))
-    wn = len(board.pieces(chess.KNIGHT, chess.WHITE))
-    bn = len(board.pieces(chess.KNIGHT, chess.BLACK))
-    wb = len(board.pieces(chess.BISHOP, chess.WHITE))
-    bb = len(board.pieces(chess.BISHOP, chess.BLACK))
-    wr = len(board.pieces(chess.ROOK, chess.WHITE))
-    br = len(board.pieces(chess.ROOK, chess.BLACK))
-    wq = len(board.pieces(chess.QUEEN, chess.WHITE))
-    bq = len(board.pieces(chess.QUEEN, chess.BLACK))
-    
-    # find weighed difference between black and white
-    material = (piece_weight["p"] * (wp - bp) + piece_weight["n"] * (wn - bn) + 
-                piece_weight["b"] * (wb - bb) + piece_weight["r"] * (wr - br) + 
-                piece_weight["q"] * (wq - bq))
-    
-    # index for board.pieces(): top row starts at index 0 and increments by 
-    # 1 going to the right. next row starts at index 8 and increments by one going 
-    # to the right and so on.
-    pawnsq = sum([pawntable[i] for i in board.pieces(chess.PAWN, chess.WHITE)])
-    pawnsq = pawnsq + sum([-pawntable[chess.square_mirror(i)]
-                        for i in board.pieces(chess.PAWN, chess.BLACK)])
-    
-    knightsq = sum([knightstable[i] for i in board.pieces(chess.KNIGHT, chess.WHITE)])
-    knightsq = knightsq + sum([-knightstable[chess.square_mirror(i)]
-                            for i in board.pieces(chess.KNIGHT, chess.BLACK)])
-    
-    bishopsq = sum([bishopstable[i] for i in board.pieces(chess.BISHOP, chess.WHITE)])
-    bishopsq = bishopsq + sum([-bishopstable[chess.square_mirror(i)]
-                            for i in board.pieces(chess.BISHOP, chess.BLACK)])
-    
-    rooksq = sum([rookstable[i] for i in board.pieces(chess.ROOK, chess.WHITE)])
-    rooksq = rooksq + sum([-rookstable[chess.square_mirror(i)]
-                        for i in board.pieces(chess.ROOK, chess.BLACK)])
-    
-    queensq = sum([queenstable[i] for i in board.pieces(chess.QUEEN, chess.WHITE)])
-    queensq = queensq + sum([-queenstable[chess.square_mirror(i)]
-                            for i in board.pieces(chess.QUEEN, chess.BLACK)])
-    
-    kingsq = sum([kingstable[i] for i in board.pieces(chess.KING, chess.WHITE)])
-    kingsq = kingsq + sum([-kingstable[chess.square_mirror(i)]
-                        for i in board.pieces(chess.KING, chess.BLACK)])
-    
-    eval = (board_state_score + material + pawnsq + knightsq + bishopsq + 
-            rooksq + queensq + kingsq)
-    
-    return eval if board.turn else -eval
-
-#--------------------------------------------------------------------------------------------
-# quienscence search to avoid horixontal effect from depth limitation
-#--------------------------------------------------------------------------------------------
-def quiesce(alpha, beta):
-    stand_pat = evaluate_board()
-    if stand_pat >= beta:
-        return beta
-    if alpha < stand_pat:
-        alpha = stand_pat
-
-    for move in board.legal_moves:
-        if board.is_capture(move):
-            board.push(move)
-            score = -quiesce(-beta, -alpha)
-            board.pop()
-
-            if score >= beta:
-                return beta
-            if score > alpha:
-                alpha = score
-
-    return alpha
-
-#--------------------------------------------------------------------------------------------
-# alpha-beta pruning to cut search cost
-#--------------------------------------------------------------------------------------------
-def alphabeta(alpha, beta, depthleft):
-    bestscore = -9999
-    if (depthleft == 0):
-        return quiesce(alpha, beta)
-    
-    for move in board.legal_moves:
-        board.push(move)
-        score = -alphabeta(-beta, -alpha, depthleft - 1)
-        board.pop()
-        
-        if (score >= beta):
-            return score
-        if (score > bestscore):
-            bestscore = score
-        if (score > alpha):
-            alpha = score
+class chessAI():
+    def __init__(self, board, depth) -> None:
+        self.board = board
+        self.search_depth = depth
+    #--------------------------------------------------------------------------------------------
+    # produce evaluation score based ONLY on checkmate and stalemate
+    #--------------------------------------------------------------------------------------------
+    def evalueate_board_state(self):
+        if self.board.is_checkmate():
+            if self.board.turn:
+                return -999999
+            else:
+                return 999999
             
-    return bestscore
+        if self.board.is_stalemate():
+                return 0
+            
+        if self.board.is_insufficient_material():
+                return 0
 
-#--------------------------------------------------------------------------------------------
-# chess ai finds move from grandmaster opening moves or use minimax search
-# with alpha-beta pruning
-#--------------------------------------------------------------------------------------------
-def select_move(search_depth):
-    try:
-        move = chess.polyglot.MemoryMappedReader("human.bin").weighted_choice(board).move
-        return move
-    except:
-        bestMove = chess.Move.null()
-        bestValue = -99999
-        alpha = -100000
-        beta = 100000
-        for move in board.legal_moves:
-            board.push(move)
-            boardValue = -alphabeta(-beta, -alpha, search_depth - 1)
-            if boardValue > bestValue:
-                bestValue = boardValue
-                bestMove = move
-            if (boardValue > alpha):
-                alpha = boardValue
-            board.pop()
-        return bestMove
+    #--------------------------------------------------------------------------------------------
+    # find the evaluation score based on board state (checkmate/stalemate)
+    # else find the score based on each piece's material value and position 
+    # value
+    #--------------------------------------------------------------------------------------------
+    def evaluate_board(self):
+        board_state_score = self.evalueate_board_state()
+        
+        # find number of each piece type for both black and white
+        wp = len(self.board.pieces(chess.PAWN, chess.WHITE))
+        bp = len(self.board.pieces(chess.PAWN, chess.BLACK))
+        wn = len(self.board.pieces(chess.KNIGHT, chess.WHITE))
+        bn = len(self.board.pieces(chess.KNIGHT, chess.BLACK))
+        wb = len(self.board.pieces(chess.BISHOP, chess.WHITE))
+        bb = len(self.board.pieces(chess.BISHOP, chess.BLACK))
+        wr = len(self.board.pieces(chess.ROOK, chess.WHITE))
+        br = len(self.board.pieces(chess.ROOK, chess.BLACK))
+        wq = len(self.board.pieces(chess.QUEEN, chess.WHITE))
+        bq = len(self.board.pieces(chess.QUEEN, chess.BLACK))
+        
+        # find weighed difference between black and white
+        material = (piece_weight["p"] * (wp - bp) + piece_weight["n"] * (wn - bn) + 
+                    piece_weight["b"] * (wb - bb) + piece_weight["r"] * (wr - br) + 
+                    piece_weight["q"] * (wq - bq))
+        
+        # index for board.pieces(): top row starts at index 0 and increments by 
+        # 1 going to the right. next row starts at index 8 and increments by one going 
+        # to the right and so on.
+        pawnsq = sum([pawntable[i] for i in self.board.pieces(chess.PAWN, chess.WHITE)])
+        pawnsq = pawnsq + sum([-pawntable[chess.square_mirror(i)]
+                            for i in self.board.pieces(chess.PAWN, chess.BLACK)])
+        
+        knightsq = sum([knightstable[i] for i in self.board.pieces(chess.KNIGHT, chess.WHITE)])
+        knightsq = knightsq + sum([-knightstable[chess.square_mirror(i)]
+                                for i in self.board.pieces(chess.KNIGHT, chess.BLACK)])
+        
+        bishopsq = sum([bishopstable[i] for i in self.board.pieces(chess.BISHOP, chess.WHITE)])
+        bishopsq = bishopsq + sum([-bishopstable[chess.square_mirror(i)]
+                                for i in self.board.pieces(chess.BISHOP, chess.BLACK)])
+        
+        rooksq = sum([rookstable[i] for i in self.board.pieces(chess.ROOK, chess.WHITE)])
+        rooksq = rooksq + sum([-rookstable[chess.square_mirror(i)]
+                            for i in self.board.pieces(chess.ROOK, chess.BLACK)])
+        
+        queensq = sum([queenstable[i] for i in self.board.pieces(chess.QUEEN, chess.WHITE)])
+        queensq = queensq + sum([-queenstable[chess.square_mirror(i)]
+                                for i in self.board.pieces(chess.QUEEN, chess.BLACK)])
+        
+        kingsq = sum([kingstable[i] for i in self.board.pieces(chess.KING, chess.WHITE)])
+        kingsq = kingsq + sum([-kingstable[chess.square_mirror(i)]
+                            for i in self.board.pieces(chess.KING, chess.BLACK)])
+        
+        eval = (board_state_score + material + pawnsq + knightsq + bishopsq + 
+                rooksq + queensq + kingsq)
+        
+        return eval if self.board.turn else -eval
+
+    #--------------------------------------------------------------------------------------------
+    # quienscence search to avoid horixontal effect from depth limitation
+    #--------------------------------------------------------------------------------------------
+    def quiesce(self, alpha, beta):
+        stand_pat = self.evaluate_board()
+        if stand_pat >= beta:
+            return beta
+        if alpha < stand_pat:
+            alpha = stand_pat
+
+        for move in self.board.legal_moves:
+            if self.board.is_capture(move):
+                self.board.push(move)
+                score = -1 * self.quiesce(-beta, -alpha)
+                self.board.pop()
+
+                if score >= beta:
+                    return beta
+                if score > alpha:
+                    alpha = score
+
+        return alpha
+
+    #--------------------------------------------------------------------------------------------
+    # alpha-beta pruning to cut search cost
+    #--------------------------------------------------------------------------------------------
+    def alphabeta(self, alpha, beta, depthleft):
+        bestscore = -9999
+        if (depthleft == 0):
+            return self.quiesce(alpha, beta)
+        
+        for move in self.board.legal_moves:
+            self.board.push(move)
+            score = -1 * self.alphabeta(-beta, -alpha, depthleft - 1)
+            self.board.pop()
+            
+            if (score >= beta):
+                return score
+            if (score > bestscore):
+                bestscore = score
+            if (score > alpha):
+                alpha = score
+                
+        return bestscore
+
+    #--------------------------------------------------------------------------------------------
+    # chess ai finds move from grandmaster opening moves or use minimax search
+    # with alpha-beta pruning
+    #--------------------------------------------------------------------------------------------
+    def select_move(self):
+        try:
+            move = chess.polyglot.MemoryMappedReader("human.bin").weighted_choice(self.board).move
+            return move
+        except:
+            bestMove = chess.Move.null()
+            bestValue = -99999
+            alpha = -100000
+            beta = 100000
+            for move in self.board.legal_moves:
+                self.board.push(move)
+                boardValue = -1 * self.alphabeta(-beta, -alpha, self.search_depth - 1)
+                if boardValue > bestValue:
+                    bestValue = boardValue
+                    bestMove = move
+                if (boardValue > alpha):
+                    alpha = boardValue
+                self.board.pop()
+            return bestMove
 
 
-
-print(select_move(5))
+# chessAI = chessAI(chess.Board())
+# print(chessAI.select_move(5))
