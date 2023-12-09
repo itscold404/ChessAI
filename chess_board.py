@@ -7,6 +7,7 @@ import traceback
 from flask import Flask, Response, request
 import webbrowser
 import time
+import os
 
 SEARCH_DEPTH = 2      # depth at which the AI will perform minimax search
     
@@ -17,10 +18,26 @@ def aimove():
     move = c_ai.select_move()
     c_ai.push(move)
 
+#------------------------------------------
+# Searching Stockfish's Move
+#------------------------------------------
+def stockfish():
+    try:
+        engine = chess.engine.SimpleEngine.popen_uci("stockfish/stockfish-windows-x86-64-avx2.exe")
+        
+        board = c_ai.get_board()
+        move = engine.play(board, chess.engine.Limit(time=0.5))
+        c_ai.push(move.move)
+        
+        engine.quit()
+    except Exception as e:
+        print("Error with stockfish interaction", e)
+        traceback.print_exc()
+        
 app = Flask(__name__)
 
 #------------------------------------------
-# Front Page of the Flask Web Page\
+# Front Page of the Flask Web Page
 #------------------------------------------
 @app.route("/")
 def main():
@@ -33,6 +50,7 @@ def main():
     ret += '<form action="/undo/" method="post"><button name="Undo" type="submit">Undo Last Move</button></form>'
     ret += '<form action="/move/"><input type="submit" value="Make Human Move:"><input name="move" type="text"></input></form>'
     ret += '<form action="/dev/" method="post"><button name="Comp Move" type="submit">Make Ai Move</button></form>'
+    ret += '<form action="/engine/" method="post"><button name="Stockfish Move" type="submit">Make Stockfish Move</button></form>'
     return ret
 
 #------------------------------------------
@@ -62,6 +80,17 @@ def move():
 def dev():
     try:
         aimove()
+    except Exception:
+        traceback.print_exc()
+    return main()
+
+#------------------------------------------
+# Make UCI Compatible engine's move
+#------------------------------------------
+@app.route("/engine/", methods=['POST'])
+def engine():
+    try:
+        stockfish()
     except Exception:
         traceback.print_exc()
     return main()
