@@ -102,11 +102,13 @@ class chessAI():
     #--------------------------------------------------------------------------------------------
     def pop(self):
         self.board.pop()
-        
+
     #--------------------------------------------------------------------------------------------
-    # produce evaluation score based ONLY on checkmate and stalemate
+    # find the evaluation score based on board state (checkmate/stalemate)
+    # else find the score based on each piece's material value and position 
+    # value
     #--------------------------------------------------------------------------------------------
-    def evalueate_board_state(self):
+    def evaluate_board(self):
         if self.board.is_checkmate():
             if self.board.turn:
                 return -999999
@@ -118,16 +120,6 @@ class chessAI():
             
         if self.board.is_insufficient_material():
             return 0
-            
-        return 0
-
-    #--------------------------------------------------------------------------------------------
-    # find the evaluation score based on board state (checkmate/stalemate)
-    # else find the score based on each piece's material value and position 
-    # value
-    #--------------------------------------------------------------------------------------------
-    def evaluate_board(self):
-        board_state_score = self.evalueate_board_state()
         
         # find number of each piece type for both black and white
         wp = len(self.board.pieces(chess.PAWN, chess.WHITE))
@@ -173,13 +165,12 @@ class chessAI():
         kingsq = kingsq + sum([-kingstable[chess.square_mirror(i)]
                             for i in self.board.pieces(chess.KING, chess.BLACK)])
         
-        eval = (board_state_score + material + pawnsq + knightsq + bishopsq + 
-                rooksq + queensq + kingsq)
+        eval = material + pawnsq + knightsq + bishopsq + rooksq + queensq + kingsq
         
         return eval if self.board.turn else -eval
 
     #--------------------------------------------------------------------------------------------
-    # quienscence search to avoid horixontal effect from depth limitation
+    # Quiescence search to avoid horixontal effect from depth limitation
     #--------------------------------------------------------------------------------------------
     def quiesce(self, alpha, beta):
         stand_pat = self.evaluate_board()

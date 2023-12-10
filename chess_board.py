@@ -7,7 +7,6 @@ import traceback
 from flask import Flask, Response, request
 import webbrowser
 import time
-import os
 
 SEARCH_DEPTH = 2      # depth at which the AI will perform minimax search
     
