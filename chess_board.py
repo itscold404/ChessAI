@@ -8,7 +8,8 @@ from flask import Flask, Response, request
 import webbrowser
 import time
 
-SEARCH_DEPTH = 2      # depth at which the AI will perform minimax search
+SEARCH_DEPTH = 4      # depth at which the AI will perform minimax search
+stockfish_move_count = 0
     
 #------------------------------------------
 # Searching Ai's Move
@@ -27,8 +28,8 @@ def stockfish():
         board = c_ai.get_board()
         move = engine.play(board, chess.engine.Limit(time=0.5))
         c_ai.push(move.move)
-        
         engine.quit()
+        
     except Exception as e:
         print("Error with stockfish interaction", e)
         traceback.print_exc()
@@ -88,8 +89,11 @@ def dev():
 #------------------------------------------
 @app.route("/engine/", methods=['POST'])
 def engine():
+    global stockfish_move_count
     try:
         stockfish()
+        stockfish_move_count += 1
+        print("stock fish made", stockfish_move_count, "moves")
     except Exception:
         traceback.print_exc()
     return main()
