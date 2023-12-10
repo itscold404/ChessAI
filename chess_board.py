@@ -8,14 +8,25 @@ from flask import Flask, Response, request
 import webbrowser
 import time
 
-SEARCH_DEPTH = 4      # depth at which the AI will perform minimax search
+SEARCH_DEPTH = 2      # depth at which the AI will perform minimax search
 stockfish_move_count = 0
+stockfish_total_time = 0
+ai_move_count = 0
+ai_total_time = 0
     
 #------------------------------------------
 # Searching Ai's Move
 #------------------------------------------
 def aimove():
+    global ai_move_count, ai_total_time
+    start = time.time()
     move = c_ai.select_move()
+    end = time.time()
+    
+    ai_total_time += end - start
+    ai_move_count += 1
+    print("AI average time taken per move:", ai_total_time/ai_move_count, "seconds")
+    
     c_ai.push(move)
 
 #------------------------------------------
@@ -89,10 +100,16 @@ def dev():
 #------------------------------------------
 @app.route("/engine/", methods=['POST'])
 def engine():
-    global stockfish_move_count
+    global stockfish_move_count, stockfish_total_time
     try:
+        start = time.time()
         stockfish()
+        end = time.time()
+        
+        stockfish_total_time += (end - start)
         stockfish_move_count += 1
+        
+        print("stock fish takes", stockfish_total_time/stockfish_move_count, "seconds on average per move")
         print("stock fish made", stockfish_move_count, "moves")
     except Exception:
         traceback.print_exc()
